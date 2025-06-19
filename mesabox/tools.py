@@ -1,5 +1,23 @@
+import os
 import platform
 import subprocess
+
+def ping_ip(ip):
+    print(f"[INFO] Starting ping to {ip} ...")
+    if platform.system().lower() == "windows":
+        param = "-n"
+        wait = "-w 1000"
+        cmd = f"ping {param} 4 {wait} {ip}"
+    else:
+        param = "-c"
+        wait = "-W 1"
+        cmd = f"ping {param} 4 {wait} {ip}"
+    response = os.system(cmd)
+    if response == 0:
+        print(f"[OK] {ip} is reachable.")
+    else:
+        print(f"[ERROR] {ip} is not reachable.")
+    print("[INFO] Ping finished.")
 
 def show_network_interfaces():
     print("[INFO] Showing network interfaces...")
@@ -20,7 +38,3 @@ def show_network_interfaces():
         print("[INFO] Display finished.")
     except Exception as e:
         print(f"[ERROR] Getting network interfaces: {e}")
-
-if __name__ == "__main__":
-    show_network_interfaces()
-    show_network_interfaces()

