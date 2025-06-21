@@ -38,27 +38,6 @@ sudo python3 main.py
 
 **Note:** Some features (Wi-Fi, deauth, BSSID scan) require root privileges and/or a Wi-Fi interface in monitor mode.
 
-## Structure
-
-```
-main.py
-src/
-  udp_flood.py
-  tcp_flood.py
-  ping_tool.py
-  network_scanner.py
-  bssid_scanner.py
-  deauth_attack.py
-  network_info.py
-  wifi_network_scanner.py
-  port_scanner.py
-  __init__.py
-README.md
-install_all.sh
-install_windows.bat
-bssid_list.json
-```
-
 ## Dependencies
 
 - Python 3.x
